@@ -134,4 +134,5 @@ Agent: I have 15 tools including list_directory, read_file, write_file,
 
 ## License
 
-MIT License
+GNU Affero General Public License v3.0 (AGPLv3). 
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation.
