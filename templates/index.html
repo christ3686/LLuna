@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLuna v7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 50: '#1a1a2e', 100: '#16162a', 200: '#0f0f1a', 300: '#0a0a14' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { font-family: 'Inter', system-ui, sans-serif }
+        code, .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px }
+        ::-webkit-scrollbar { width: 6px; height: 6px }
+        ::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 3px }
+        ::-webkit-scrollbar-track { background: transparent }
+        .dark ::-webkit-scrollbar-thumb { background: #6B7280 }
+        .toggle { position: relative; width: 36px; height: 20px }
+        .toggle input { opacity: 0; width: 0; height: 0 }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #4B5563; transition: .2s; border-radius: 20px }
+        .toggle-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50% }
+        input:checked + .toggle-slider { background: #7C3AED }
+        input:checked + .toggle-slider:before { transform: translateX(16px) }
+        @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
+        .pulse { animation: pulse 1.5s infinite }
+        @keyframes spin { to { transform: rotate(360deg) } }
+        .spin { animation: spin 1s linear infinite }
+        .tool-output { max-height: 200px; overflow-y: auto }
+        .tool-output.expanded { max-height: none }
+        textarea { resize: none; overflow: hidden }
+        .prose pre { max-height: 300px; overflow: auto }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-dark-100 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white dark:bg-dark-50 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white">🌙</div>
+                    <div><h1 class="font-bold text-lg">LLuna <span class="text-violet-500">v7</span></h1><p class="text-xs text-gray-500 dark:text-gray-400">Integrity Mode</p></div>
+                </div>
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Toggle theme">
+                    <svg id="theme-icon-light" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+                    <svg id="theme-icon-dark" class="w-5 h-5 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Progress -->
+        <div id="mount-progress" class="hidden p-3 border-b border-gray-200 dark:border-gray-700 bg-violet-50 dark:bg-violet-900/30">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full spin"></div>
+                <span class="text-xs font-medium">Mounting...</span>
+            </div>
+            <div class="h-1.5 bg-white dark:bg-gray-700 rounded-full"><div id="mount-bar" class="h-full bg-violet-600 rounded-full transition-all" style="width:0%"></div></div>
+            <p id="mount-text" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
+        </div>
+        
+        <!-- LLM -->
+        <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 gap-1.5 mb-2">
+                <button id="btn-ollama" class="provider-btn px-2 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-xs flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <span class="dot w-1.5 h-1.5 rounded-full bg-gray-300"></span>Ollama
+                </button>
+                <button id="btn-lmstudio" class="provider-btn px-2 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-xs flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <span class="dot w-1.5 h-1.5 rounded-full bg-gray-300"></span>LM Studio
+                </button>
+            </div>
+            <select id="model-select" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-100 rounded px-2 py-1.5 text-xs mb-2 focus:border-violet-500 focus:outline-none">
+                <option value="">Select model...</option>
+            </select>
+            <button id="connect-btn" class="w-full py-1.5 rounded text-xs font-medium bg-violet-600 text-white hover:bg-violet-700">Connect</button>
+            <div id="llm-status" class="mt-1.5 text-xs text-center text-gray-400">Not connected</div>
+        </div>
+        
+        <!-- Settings -->
+        <div class="p-3 border-b border-gray-200 dark:border-gray-700 space-y-2">
+            <label class="flex items-center justify-between text-xs">
+                <span>Auto-execute safe</span>
+                <label class="toggle"><input type="checkbox" id="auto-execute"><span class="toggle-slider"></span></label>
+            </label>
+            <label class="flex items-center justify-between text-xs">
+                <span>Show thinking</span>
+                <label class="toggle"><input type="checkbox" id="show-thinking" checked><span class="toggle-slider"></span></label>
+            </label>
+            <label class="flex items-center justify-between text-xs">
+                <span>Stream output</span>
+                <label class="toggle"><input type="checkbox" id="stream-output" checked><span class="toggle-slider"></span></label>
+            </label>
+        </div>
+        
+        <!-- Servers - SCROLLABLE -->
+        <div class="flex-1 flex flex-col min-h-0 p-3 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">SERVERS</span>
+                <div class="flex gap-1">
+                    <button id="start-all-btn" class="text-xs text-green-600 hover:text-green-700">Start</button>
+                    <button id="stop-all-btn" class="text-xs text-red-600 hover:text-red-700">Stop</button>
+                </div>
+            </div>
+            <div id="servers-list" class="flex-1 overflow-y-auto space-y-1 min-h-0"></div>
+        </div>
+        
+        <!-- Tools Section - SCROLLABLE -->
+        <div class="flex-1 flex flex-col min-h-0 p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">TOOLS</span>
+                <span id="tools-count" class="text-xs font-bold text-violet-600">0</span>
+            </div>
+            <div id="tools-list" class="flex-1 overflow-y-auto space-y-0.5 text-xs min-h-0"></div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-dark-200 space-y-1 text-xs">
+            <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Context</span><span id="context-usage" class="mono">0%</span></div>
+            <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Confidence</span><span id="confidence" class="mono">-</span></div>
+            <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Prompt</span><span id="prompt-id" class="mono text-gray-400 truncate max-w-[80px]">-</span></div>
+            <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Halluc. Blocks</span><span id="halluc-blocks" class="mono text-red-600">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Loop Aborts</span><span id="loop-aborts" class="mono text-amber-600">0</span></div>
+        </div>
+    </aside>
+    
+    <!-- Main -->
+    <main class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="h-10 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 bg-white dark:bg-dark-50">
+            <div id="status" class="flex items-center gap-1.5 text-xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                <span class="text-gray-400">Offline</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="stop-btn" class="hidden px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700">Stop</button>
+                <button id="clear-btn" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Clear</button>
+            </div>
+        </header>
+        
+        <!-- Messages - SCROLLABLE -->
+        <div id="messages" class="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-100">
+            <div class="max-w-3xl mx-auto py-6 px-4">
+                <div id="welcome" class="text-center py-12">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900 dark:to-purple-900 flex items-center justify-center text-3xl">🌙</div>
+                    <h2 class="text-xl font-bold mb-2">LLuna v7.1 - Integrity Mode</h2>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto mb-4">Tools = ground truth. No pretending. No hallucination.</p>
+                    <div class="flex justify-center gap-2 text-xs">
+                        <span class="px-2 py-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded">Anti-Hallucination</span>
+                        <span class="px-2 py-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded">Tool Cache</span>
+                        <span class="px-2 py-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded">Dark Mode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Thinking -->
+        <div id="thinking" class="hidden border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/30 dark:to-purple-900/30 px-4 py-2">
+            <div class="max-w-3xl mx-auto flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center">
+                    <div class="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full spin"></div>
+                </div>
+                <span id="thinking-state" class="text-xs font-medium">Thinking...</span>
+                <span id="thinking-iter" class="text-xs text-gray-400">(1/20)</span>
+                <span id="thinking-conf" class="text-xs text-gray-400 ml-auto mono"></span>
+            </div>
+        </div>
+        
+        <!-- Violation Panel -->
+        <div id="violation-panel" class="hidden border-t border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-900/30 px-4 py-2">
+            <div class="max-w-3xl mx-auto flex items-center gap-2">
+                <span class="text-red-600">⚠️</span>
+                <span class="text-xs font-medium text-red-700 dark:text-red-400">Integrity Violation:</span>
+                <span id="violation-type" class="text-xs text-red-600 dark:text-red-400"></span>
+            </div>
+        </div>
+        
+        <!-- Approval -->
+        <div id="approval" class="hidden border-t border-gray-200 dark:border-gray-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
+            <div class="max-w-3xl mx-auto">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-amber-600">⚠️</span>
+                    <span class="text-sm font-medium">Approval Required</span>
+                </div>
+                <div class="bg-white dark:bg-dark-100 rounded border border-amber-200 dark:border-amber-700 p-2 mb-2">
+                    <div class="flex items-center gap-2 mb-1">
+                        <code id="pending-tool" class="text-xs font-bold text-amber-700 dark:text-amber-400"></code>
+                        <code id="pending-id" class="text-xs text-gray-400 ml-auto"></code>
+                    </div>
+                    <pre class="text-xs bg-gray-50 dark:bg-dark-200 rounded p-2 overflow-x-auto mono"><code id="pending-args"></code></pre>
+                </div>
+                <div class="flex gap-2">
+                    <button id="approve-btn" class="flex-1 py-1.5 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700">✓ Approve</button>
+                    <button id="reject-btn" class="flex-1 py-1.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">✕ Reject</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input -->
+        <div class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-50 p-3">
+            <form id="chat-form" class="max-w-3xl mx-auto">
+                <div class="relative">
+                    <textarea id="input" rows="1" placeholder="Message LLuna..." 
+                        class="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-dark-100 focus:outline-none focus:border-violet-500 text-sm max-h-40 overflow-y-auto"
+                        style="min-height: 48px;"></textarea>
+                    <button type="submit" id="send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+const App = {
+    socket: null,
+    provider: 'ollama',
+    connected: false,
+    processing: false,
+    showThinkingEnabled: true,
+    streamOutputEnabled: true,
+    darkMode: false,
+    
+    init() {
+        this.socket = io({ transports: ['websocket', 'polling'] });
+        this.loadTheme();
+        this.bindEvents();
+        this.bindSocket();
+        this.loadData();
+        this.setupTextarea();
+    },
+    
+    loadTheme() {
+        const stored = localStorage.getItem('lluna-theme');
+        if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            this.darkMode = true;
+            document.documentElement.classList.add('dark');
+        }
+    },
+    
+    toggleTheme() {
+        this.darkMode = !this.darkMode;
+        if (this.darkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('lluna-theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('lluna-theme', 'light');
+        }
+    },
+    
+    setupTextarea() {
+        const textarea = document.getElementById('input');
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+        });
+    },
+    
+    bindEvents() {
+        document.getElementById('theme-toggle').onclick = () => this.toggleTheme();
+        document.getElementById('btn-ollama').onclick = () => this.selectProvider('ollama');
+        document.getElementById('btn-lmstudio').onclick = () => this.selectProvider('lmstudio');
+        document.getElementById('connect-btn').onclick = () => this.toggleConnection();
+        document.getElementById('chat-form').onsubmit = e => { e.preventDefault(); this.send(); };
+        document.getElementById('input').oninput = () => this.updateBtn();
+        document.getElementById('input').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.send(); } };
+        document.getElementById('clear-btn').onclick = () => this.clearChat();
+        document.getElementById('stop-btn').onclick = () => this.socket.emit('stop_agent');
+        document.getElementById('auto-execute').onchange = e => this.socket.emit('set_auto_execute', { enabled: e.target.checked });
+        document.getElementById('show-thinking').onchange = e => { this.showThinkingEnabled = e.target.checked; this.updateThinkingVisibility(); };
+        document.getElementById('stream-output').onchange = e => { this.streamOutputEnabled = e.target.checked; this.socket.emit('set_stream', { enabled: e.target.checked }); };
+        document.getElementById('start-all-btn').onclick = () => { this.showMount(); this.socket.emit('start_servers'); };
+        document.getElementById('stop-all-btn').onclick = () => this.socket.emit('stop_all_servers');
+        document.getElementById('approve-btn').onclick = () => { this.hideApproval(); this.socket.emit('approve_tool'); };
+        document.getElementById('reject-btn').onclick = () => { this.hideApproval(); this.socket.emit('reject_tool'); };
+    },
+    
+    updateThinkingVisibility() {
+        const el = document.getElementById('thinking');
+        if (this.showThinkingEnabled) el.classList.remove('invisible');
+        else el.classList.add('invisible');
+    },
+    
+    bindSocket() {
+        this.socket.on('status', d => { if (d.llm) this.updateLLM(d.llm); if (d.servers) this.updateServers(d.servers); if (d.stats) this.updateStats(d.stats); });
+        this.socket.on('llm_status', d => this.updateLLM(d));
+        this.socket.on('servers_status', d => { this.updateServers(d.status || d); this.loadTools(); });
+        this.socket.on('mount_progress', d => this.updateMount(d));
+        this.socket.on('mount_complete', () => this.hideMount());
+        this.socket.on('cognitive_event', d => this.handleEvent(d));
+        this.socket.on('response', d => this.handleResponse(d));
+        this.socket.on('error', d => this.handleError(d));
+        this.socket.on('agent_stopped', () => { this.hideThinking(); this.hideStop(); this.processing = false; this.updateBtn(); this.addMsg('system', '⏹️ Stopped'); });
+    },
+    
+    async loadData() {
+        try {
+            const [llm, servers] = await Promise.all([
+                fetch('/api/llm/status').then(r => r.json()),
+                fetch('/api/servers').then(r => r.json())
+            ]);
+            this.updateLLM(llm);
+            this.updateServers(servers);
+            this.loadTools();
+        } catch (e) { console.error(e); }
+    },
+    
+    selectProvider(p) {
+        this.provider = p;
+        document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('border-violet-500', 'bg-violet-50', 'dark:bg-violet-900/30'));
+        document.getElementById(`btn-${p}`).classList.add('border-violet-500', 'bg-violet-50', 'dark:bg-violet-900/30');
+        this.loadModels(p);
+    },
+    
+    async loadModels(p) {
+        const sel = document.getElementById('model-select');
+        sel.innerHTML = '<option value="">Loading...</option>';
+        try {
+            const pr = (await (await fetch('/api/llm/providers')).json()).find(x => x.name === p);
+            sel.innerHTML = '<option value="">Select model...</option>';
+            (pr?.models || []).forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`);
+        } catch (e) {}
+    },
+    
+    toggleConnection() {
+        if (this.connected) {
+            this.socket.emit('disconnect_llm');
+            this.connected = false;
+            document.getElementById('connect-btn').textContent = 'Connect';
+            document.getElementById('connect-btn').classList.replace('bg-red-600', 'bg-violet-600');
+            document.getElementById('llm-status').textContent = 'Disconnected';
+            this.updateStatus(false);
+        } else {
+            this.socket.emit('connect_llm', { provider: this.provider, model: document.getElementById('model-select').value || undefined });
+        }
+    },
+    
+    updateLLM(d) {
+        const c = d.current_provider, p = d.providers?.[c];
+        if (p?.status === 'connected') {
+            this.connected = true;
+            document.getElementById('connect-btn').textContent = 'Disconnect';
+            document.getElementById('connect-btn').classList.replace('bg-violet-600', 'bg-red-600');
+            document.getElementById('llm-status').innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1"></span>${p.model}`;
+            this.updateStatus(true);
+            if (p.available_models?.length) {
+                const sel = document.getElementById('model-select');
+                sel.innerHTML = '';
+                p.available_models.forEach(m => sel.innerHTML += `<option value="${m}" ${m === p.model ? 'selected' : ''}>${m}</option>`);
+            }
+        } else {
+            this.connected = false;
+            document.getElementById('connect-btn').textContent = 'Connect';
+            document.getElementById('connect-btn').classList.replace('bg-red-600', 'bg-violet-600');
+            document.getElementById('llm-status').textContent = p?.error || 'Not connected';
+            this.updateStatus(false);
+        }
+        this.updateBtn();
+    },
+    
+    updateStatus(on) {
+        document.getElementById('status').innerHTML = on 
+            ? '<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span><span class="text-green-600 dark:text-green-400 font-medium">Online</span>'
+            : '<span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span><span class="text-gray-400">Offline</span>';
+    },
+    
+    updateStats(s) {
+        if (s.context) document.getElementById('context-usage').textContent = `${s.context.usage_percent}%`;
+        if (s.current_prompt_id) document.getElementById('prompt-id').textContent = s.current_prompt_id.substring(0, 10);
+        if (s.hallucination_blocks !== undefined) document.getElementById('halluc-blocks').textContent = s.hallucination_blocks;
+        if (s.loop_aborts !== undefined) document.getElementById('loop-aborts').textContent = s.loop_aborts;
+        if (s.loop?.avg_confidence !== undefined) document.getElementById('confidence').textContent = s.loop.avg_confidence.toFixed(2);
+    },
+    
+    updateServers(servers) {
+        const list = document.getElementById('servers-list');
+        list.innerHTML = '';
+        const self = this;  // Store reference for event handlers
+        
+        // Show ALL servers - sorted by status
+        const sorted = Object.entries(servers).sort((a, b) => {
+            const order = { healthy: 0, running: 1, starting: 2, error: 3, stopped: 4 };
+            return (order[a[1].status] ?? 5) - (order[b[1].status] ?? 5) || a[0].localeCompare(b[0]);
+        });
+        
+        if (sorted.length === 0) {
+            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-2">No servers found</div>';
+            return;
+        }
+        
+        sorted.forEach(([n, s]) => {
+            const isRunning = s.status === 'running' || s.status === 'healthy';
+            const isStarting = s.status === 'starting';
+            const isError = s.status === 'error';
+            const isStopped = s.status === 'stopped';
+            
+            const colors = { 
+                running: 'bg-green-500', healthy: 'bg-green-500', 
+                starting: 'bg-amber-500 pulse', error: 'bg-red-500', stopped: 'bg-gray-400'
+            };
+            
+            const borderClass = isRunning ? 'border-green-200 dark:border-green-800' : 
+                               isError ? 'border-red-200 dark:border-red-800' : 
+                               'border-gray-200 dark:border-gray-700';
+            
+            // Create element instead of using innerHTML += 
+            const div = document.createElement('div');
+            div.className = `flex items-center justify-between p-1.5 bg-white dark:bg-dark-100 rounded border ${borderClass} text-xs group ${isStopped ? 'opacity-60' : ''}`;
+            div.innerHTML = `
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[s.status] || 'bg-gray-300'}"></span>
+                    <span class="truncate ${isStopped ? 'text-gray-400' : ''}">${n}</span>
+                    ${isRunning ? `<span class="text-gray-400 flex-shrink-0">${s.tools_count || 0}</span>` : ''}
+                </div>
+                <button class="srv-btn opacity-0 group-hover:opacity-100 text-xs flex-shrink-0 ml-1 ${isRunning ? 'text-red-600' : 'text-green-600'}">${isRunning ? '×' : '▶'}</button>
+            `;
+            
+            // Attach click handler directly
+            const btn = div.querySelector('.srv-btn');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                self.toggleServer(n, !isRunning);
+            });
+            
+            list.appendChild(div);
+        });
+    },
+    
+    showMount() { document.getElementById('mount-progress').classList.remove('hidden'); },
+    hideMount() { document.getElementById('mount-progress').classList.add('hidden'); },
+    updateMount(d) {
+        document.getElementById('mount-bar').style.width = `${d.total > 0 ? Math.round(d.current / d.total * 100) : 0}%`;
+        document.getElementById('mount-text').textContent = `${d.server}: ${d.status}`;
+    },
+    
+    async toggleServer(n, start) {
+        await fetch(`/api/servers/${n}/${start ? 'start' : 'stop'}`, { method: 'POST' });
+        this.updateServers(await (await fetch('/api/servers')).json());
+        this.loadTools();
+    },
+    
+    async loadTools() { 
+        try { 
+            const tools = await (await fetch('/api/tools')).json();
+            document.getElementById('tools-count').textContent = tools.length;
+            
+            const byServer = {};
+            tools.forEach(t => {
+                const server = t.server || 'unknown';
+                if (!byServer[server]) byServer[server] = [];
+                byServer[server].push(t);
+            });
+            
+            const list = document.getElementById('tools-list');
+            list.innerHTML = '';
+            
+            if (tools.length === 0) {
+                list.innerHTML = '<div class="text-gray-400 text-center py-2">No tools. Start servers.</div>';
+                return;
+            }
+            
+            Object.entries(byServer).sort((a,b) => a[0].localeCompare(b[0])).forEach(([server, serverTools]) => {
+                const header = document.createElement('div');
+                header.className = 'text-gray-400 text-[10px] uppercase tracking-wide mt-2 mb-1 truncate';
+                header.textContent = server.replace(/_/g, ' ');
+                list.appendChild(header);
+                
+                serverTools.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center gap-1 py-0.5 px-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-default';
+                    item.innerHTML = `<span class="w-1 h-1 rounded-full bg-violet-400 flex-shrink-0"></span><span class="truncate">${t.name}</span>`;
+                    item.title = t.description || t.name;
+                    list.appendChild(item);
+                });
+            });
+        } catch (e) { console.error('Failed to load tools:', e); } 
+    },
+    
+    updateBtn() {
+        const btn = document.getElementById('send-btn');
+        const hasInput = document.getElementById('input').value.trim();
+        btn.disabled = !hasInput || this.processing || !this.connected;
+    },
+    
+    clearChat() {
+        const msgs = document.getElementById('messages').querySelector('.max-w-3xl');
+        msgs.innerHTML = document.getElementById('welcome') ? '' : `<div id="welcome" class="text-center py-12">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900 dark:to-purple-900 flex items-center justify-center text-3xl">🌙</div>
+            <h2 class="text-xl font-bold mb-2">LLuna v7.1</h2>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Ready to help.</p>
+        </div>`;
+        fetch('/api/chat/clear', { method: 'POST' });
+    },
+    
+    esc(s) { return s?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') || ''; },
+    scroll() { document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight; },
+    
+    send() {
+        const msg = document.getElementById('input').value.trim();
+        if (!msg || this.processing || !this.connected) return;
+        this.processing = true;
+        document.getElementById('input').value = '';
+        document.getElementById('input').style.height = '48px';
+        this.updateBtn();
+        document.getElementById('welcome')?.remove();
+        this.addMsg('user', msg);
+        this.showThinking();
+        this.showStop();
+        this.hideViolation();
+        this.socket.emit('chat', { message: msg });
+    },
+    
+    addMsg(role, content) {
+        const c = document.getElementById('messages').querySelector('.max-w-3xl');
+        const d = document.createElement('div');
+        d.className = 'mb-4';
+        if (role === 'user') {
+            d.innerHTML = `<div class="flex justify-end"><div class="max-w-[85%] bg-violet-100 dark:bg-violet-900/50 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words">${this.esc(content)}</div></div>`;
+        } else if (role === 'system') {
+            d.innerHTML = `<div class="text-center py-1"><span class="text-xs text-gray-400">${content}</span></div>`;
+        } else {
+            d.innerHTML = `<div class="flex gap-3"><div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white text-xs">🌙</div><div class="flex-1 prose prose-sm dark:prose-invert max-w-none overflow-x-auto">${marked.parse(content)}</div></div>`;
+        }
+        c.appendChild(d);
+        this.scroll();
+    },
+    
+    addTool(ev) {
+        const existing = document.querySelector(`.tool-card[data-id="${ev.tool_call_id}"]`);
+        if (existing) { this.updateTool(ev); return; }
+        
+        const c = document.getElementById('messages').querySelector('.max-w-3xl');
+        const d = document.createElement('div');
+        d.className = 'mb-3';
+        const stateColor = { requested: 'bg-gray-400', executing: 'bg-violet-500 pulse', completed_success: 'bg-green-500', completed_empty: 'bg-amber-500', failed: 'bg-red-500', stale: 'bg-gray-400', executor_missing: 'bg-red-500' };
+        
+        d.innerHTML = `<div class="flex gap-3">
+            <div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm">🔧</div>
+            <div class="flex-1 min-w-0">
+                <div class="tool-card bg-gray-50 dark:bg-dark-200 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" data-id="${ev.tool_call_id}">
+                    <div class="flex items-center justify-between px-2 py-1.5 bg-white dark:bg-dark-50 border-b border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="tool-dot w-1.5 h-1.5 rounded-full flex-shrink-0 ${stateColor[ev.tool_state] || 'bg-gray-400'}"></span>
+                            <code class="text-xs font-bold truncate">${ev.tool_name}</code>
+                            <span class="tool-state text-xs px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">${ev.tool_state || 'requested'}</span>
+                        </div>
+                        <span class="tool-dur text-xs text-gray-400 mono flex-shrink-0"></span>
+                    </div>
+                    <div class="px-2 py-0.5 bg-violet-50 dark:bg-violet-900/30 border-b border-gray-100 dark:border-gray-700 text-xs mono text-violet-600 dark:text-violet-400 truncate">${ev.tool_call_id}</div>
+                    <div class="p-2 space-y-1.5 text-xs">
+                        <pre class="bg-white dark:bg-dark-100 rounded p-1.5 overflow-x-auto mono whitespace-pre-wrap break-all">${this.esc(JSON.stringify(ev.tool_args || {}, null, 2))}</pre>
+                        <div class="tool-res hidden">
+                            <div class="tool-output bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded p-1.5 overflow-x-auto mono res-txt whitespace-pre-wrap break-all cursor-pointer" title="Click to expand/collapse"></div>
+                        </div>
+                        <div class="tool-err hidden">
+                            <div class="tool-output bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded p-1.5 err-txt whitespace-pre-wrap break-all cursor-pointer" title="Click to expand/collapse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Add click handlers for expand/collapse
+        d.querySelectorAll('.tool-output').forEach(el => {
+            el.addEventListener('click', () => el.classList.toggle('expanded'));
+        });
+        
+        c.appendChild(d);
+        this.scroll();
+    },
+    
+    updateTool(ev) {
+        const card = document.querySelector(`.tool-card[data-id="${ev.tool_call_id}"]`);
+        if (!card) return;
+        const stateColor = { executing: 'bg-violet-500 pulse', completed_success: 'bg-green-500', completed_empty: 'bg-amber-500', failed: 'bg-red-500', stale: 'bg-gray-400', executor_missing: 'bg-red-500' };
+        card.querySelector('.tool-dot').className = `tool-dot w-1.5 h-1.5 rounded-full flex-shrink-0 ${stateColor[ev.tool_state] || 'bg-gray-400'}`;
+        card.querySelector('.tool-state').textContent = ev.tool_state;
+        if (ev.tool_error) { 
+            card.querySelector('.tool-err').classList.remove('hidden'); 
+            card.querySelector('.err-txt').textContent = ev.tool_error; 
+        } else if (ev.tool_result) { 
+            card.querySelector('.tool-res').classList.remove('hidden'); 
+            // Show FULL result, not truncated
+            card.querySelector('.res-txt').textContent = ev.tool_result; 
+        }
+        if (ev.duration_ms) card.querySelector('.tool-dur').textContent = `${ev.duration_ms}ms`;
+    },
+    
+    showThinking() { if (this.showThinkingEnabled) document.getElementById('thinking').classList.remove('hidden'); },
+    hideThinking() { document.getElementById('thinking').classList.add('hidden'); },
+    showStop() { document.getElementById('stop-btn').classList.remove('hidden'); },
+    hideStop() { document.getElementById('stop-btn').classList.add('hidden'); },
+    showViolation(type) { document.getElementById('violation-type').textContent = type; document.getElementById('violation-panel').classList.remove('hidden'); },
+    hideViolation() { document.getElementById('violation-panel').classList.add('hidden'); },
+    showApproval(ev) {
+        document.getElementById('pending-tool').textContent = ev.tool_name || '';
+        document.getElementById('pending-id').textContent = ev.tool_call_id || '';
+        document.getElementById('pending-args').textContent = JSON.stringify(ev.tool_args || {}, null, 2);
+        document.getElementById('approval').classList.remove('hidden');
+    },
+    hideApproval() { document.getElementById('approval').classList.add('hidden'); },
+    
+    handleEvent(ev) {
+        if (ev.prompt_id) document.getElementById('prompt-id').textContent = ev.prompt_id.substring(0, 10);
+        if (ev.confidence) document.getElementById('confidence').textContent = ev.confidence.toFixed(2);
+        
+        const states = { perceiving: 'Analyzing...', reasoning: 'Thinking...', tool_requested: 'Tool requested', executing: 'Executing...', observing: 'Processing result...', responding: 'Generating...', awaiting_approval: 'Awaiting approval...', hallucination_blocked: 'BLOCKED', loop_aborted: 'ABORTED' };
+        document.getElementById('thinking-state').textContent = states[ev.state] || ev.state;
+        document.getElementById('thinking-iter').textContent = `(${ev.iteration || 1}/20)`;
+        document.getElementById('thinking-conf').textContent = ev.confidence ? `conf: ${ev.confidence.toFixed(2)}` : '';
+        
+        switch (ev.state) {
+            case 'tool_requested':
+            case 'executing':
+                if (ev.tool_name) this.addTool(ev);
+                break;
+            case 'observing':
+                if (ev.tool_call_id) this.updateTool(ev);
+                break;
+            case 'awaiting_approval':
+                if (ev.requires_approval) this.showApproval(ev);
+                break;
+            case 'hallucination_blocked':
+                this.showViolation(ev.violation_type || 'unknown');
+                break;
+            case 'loop_aborted':
+                this.showViolation('loop_aborted');
+                break;
+        }
+    },
+    
+    handleResponse(d) {
+        this.hideThinking();
+        this.hideStop();
+        this.hideApproval();
+        this.processing = false;
+        this.updateBtn();
+        // Backend sends 'content', not 'response'
+        if (d.content) this.addMsg('assistant', d.content);
+        else if (d.response) this.addMsg('assistant', d.response);
+        if (d.stats) this.updateStats(d.stats);
+    },
+    
+    handleError(d) {
+        this.hideThinking();
+        this.hideStop();
+        this.hideApproval();
+        this.processing = false;
+        this.updateBtn();
+        this.addMsg('assistant', `Error: ${d.message || d.error || 'Unknown error'}`);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>

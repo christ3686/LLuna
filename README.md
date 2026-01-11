@@ -1,406 +1,137 @@
-# 🌙 LLuna v7.1 - Complete Documentation
+# 🌙 LLuna v7.1 - Tool-Aware Integrity Mode
 
-## Overview
+**It is technically impossible for this agent to pretend execution, infer external state, or stall silently.**
 
-LLuna is an autonomous AI agent framework with **integrity enforcement** - making it technically impossible for the agent to pretend execution, infer external state, or stall silently. Designed for small language models (4B-8B parameters).
+📚 **[Full Documentation](DOCUMENTATION.md)** - Complete guide with API reference, troubleshooting, and more.
 
-## Table of Contents
+## 🆕 v7.1 Features
 
-1. [Installation](#installation)
-2. [Quick Start](#quick-start)
-3. [Architecture](#architecture)
-4. [Core Components](#core-components)
-5. [MCP Servers](#mcp-servers)
-6. [Configuration](#configuration)
-7. [API Reference](#api-reference)
-8. [UI Features](#ui-features)
-9. [Troubleshooting](#troubleshooting)
-
----
-
-## Installation
-
-### Requirements
-- Python 3.10+
-- Ollama or LM Studio (for LLM)
-- 8GB+ RAM recommended
-
-### Setup
-
-```bash
-# Extract the archive
-unzip lluna_v7.zip
-cd lluna_v7
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the server
-python app.py
-```
-
-### Dependencies
-```
-flask>=3.0.0
-flask-socketio>=5.3.0
-pyyaml>=6.0
-requests>=2.31.0
-```
-
----
-
-## Quick Start
-
-1. **Start LLuna**: `python app.py`
-2. **Open browser**: http://localhost:5000
-3. **Select LLM provider**: Ollama or LM Studio
-4. **Connect to a model**: Select and click "Connect"
-5. **Start MCP servers**: Click "Start" to enable tools
-6. **Chat**: Ask LLuna to perform tasks
-
-### Example Prompts
-- "List my desktop files"
-- "What's the IP address of google.com?"
-- "Create a file called test.txt with 'Hello World'"
-- "Ping 8.8.8.8"
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        LLuna v7.1                                │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐   ┌─────────────────┐   ┌─────────────────┐  │
-│  │   Flask UI   │   │  AutonomousAgent │   │   MCP Client    │  │
-│  │  (Socket.IO) │◄──│                  │──►│                 │  │
-│  └──────────────┘   │  ┌────────────┐  │   │  ┌───────────┐  │  │
-│                     │  │ToolCache   │  │   │  │filesystem │  │  │
-│  ┌──────────────┐   │  │ToolRegistry│  │   │  │network    │  │  │
-│  │  LLM Manager │◄──│  │Hallucinator│  │   │  │bash       │  │  │
-│  │ Ollama/LMS   │   │  │LoopControl │  │   │  │memory     │  │  │
-│  └──────────────┘   │  └────────────┘  │   │  └───────────┘  │  │
-│                     └─────────────────┘   └─────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Data Flow
-```
-User Input → Agent.process() → LLM → Extract Tool → Validate → Execute → Result → LLM → Response
-                  │                       │              │
-                  ▼                       ▼              ▼
-            ToolCache.has()     Registry.register()  MCP.call()
-```
-
----
-
-## Core Components
-
-### 1. AutonomousAgent (`agent/core.py`)
-
-The main agent class that orchestrates all operations.
-
-**Key Methods:**
-- `process(message)` - Main entry point for user messages
-- `refresh_tool_cache()` - Refresh available tools
-- `approve_pending()` / `reject_pending()` - Handle approval requests
-
-**Features:**
-- Tool session cache
-- Hallucination detection
-- Loop discipline (max 20 iterations)
-- Confidence scoring
-- Path normalization
-
-### 2. ToolCache (`agent/tool_cache.py`)
-
-Caches available tools for fast lookup and similarity matching.
-
-**Features:**
-- `has_tool(name)` - Check if tool exists
-- `find_similar(name)` - Fuzzy match suggestions
-- `get_tool_list_for_prompt()` - Format tools for LLM
-- `is_meta_question()` - Detect capability questions
-
-### 3. HallucinationDetector (`agent/tool_integrity.py`)
-
-Detects when LLM makes claims about external state without tool evidence.
-
-**Detection Types:**
-- `external_state` - Claims about files/network without tool
-- `instruction_fallback` - Telling user what to do instead of doing
-- `unknown_path` - Mentioning paths not in tool output
-
-**Context-Aware:**
-- Allows responses after tool output
-- Skips meta-questions about capabilities
-
-### 4. ToolExecutionRegistry (`agent/tool_integrity.py`)
-
-State machine for tool execution lifecycle.
-
-**States:**
-```
-REGISTERED → APPROVED → EXECUTING → COMPLETED_SUCCESS
-                 │                  → COMPLETED_EMPTY
-                 │                  → FAILED
-                 └→ REJECTED
-                 └→ TIMEOUT
-```
-
-### 5. LoopDiscipline (`agent/loop_discipline.py`)
-
-Prevents infinite loops and ensures progress.
-
-**Features:**
-- Max iterations (default 20)
-- Confidence tracking
-- Repetition detection
-- Early exit on high confidence
-
----
-
-## MCP Servers
-
-### Available Servers
-
-| Server | Tools | Description |
-|--------|-------|-------------|
-| `filesystem_read` | 3 | read_file, list_directory, file_exists |
-| `filesystem_write` | 5 | write_file, create_directory, delete_file, etc. |
-| `bash_executor` | 1 | execute_command |
-| `network_tools` | 3 | ping, check_connection, dns_lookup |
-| `memory_store` | 3 | store_memory, recall_memory, list_memories |
-| `git_tools` | 5 | git status, commit, branch, etc. |
-| `python_executor` | 1 | run_python |
-| `web_fetch` | 1 | fetch_url |
-
-### Creating Custom Servers
-
-```python
-# mcp_servers/my_tool.py
-import json
-import sys
-
-TOOLS = [
-    {
-        "name": "my_tool",
-        "description": "Does something useful",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "param": {"type": "string", "description": "Parameter"}
-            },
-            "required": ["param"]
-        }
-    }
-]
-
-def handle_my_tool(arguments):
-    param = arguments.get("param", "")
-    # Do something
-    return {"result": f"Did something with {param}"}
-
-def main():
-    # MCP protocol loop
-    for line in sys.stdin:
-        request = json.loads(line)
-        if request.get("method") == "tools/list":
-            print(json.dumps({"result": {"tools": TOOLS}}))
-        elif request.get("method") == "tools/call":
-            result = handle_my_tool(request["params"]["arguments"])
-            print(json.dumps({"result": {"content": [{"type": "text", "text": json.dumps(result)}]}}))
-        sys.stdout.flush()
-
-if __name__ == "__main__":
-    main()
-```
-
-### Server Auto-Discovery
-
-Servers are auto-discovered from `mcp_servers/` directory. Any `.py` file (except `__init__.py`) is registered automatically.
-
----
-
-## Configuration
-
-### config.yaml
-
-```yaml
-mcpServers:
-  filesystem_read:
-    command: python
-    args: ["mcp_servers/filesystem_read.py"]
-    enabled: true
-    description: "File reading operations"
-    category: "filesystem"
-  
-  network_tools:
-    command: python
-    args: ["mcp_servers/network_tools.py"]
-    enabled: true
-    description: "Network utilities"
-    category: "network"
-
-settings:
-  max_iterations: 20
-  approval_timeout: 300
-  auto_approve_safe: false
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLUNA_HOST` | `0.0.0.0` | Server host |
-| `LLUNA_PORT` | `5000` | Server port |
-| `OLLAMA_URL` | `http://localhost:11434` | Ollama API URL |
-| `LMSTUDIO_URL` | `http://localhost:1234` | LM Studio URL |
-
----
-
-## API Reference
-
-### REST Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/llm/status` | GET | LLM connection status |
-| `/api/llm/providers` | GET | Available providers/models |
-| `/api/servers` | GET | Server status |
-| `/api/servers/<name>/start` | POST | Start a server |
-| `/api/servers/<name>/stop` | POST | Stop a server |
-| `/api/tools` | GET | List all tools |
-| `/api/agent/stats` | GET | Agent statistics |
-| `/api/chat/clear` | POST | Clear conversation |
-
-### WebSocket Events
-
-**Client → Server:**
-- `connect_llm` - Connect to LLM provider
-- `disconnect_llm` - Disconnect from LLM
-- `chat` - Send message
-- `stop_agent` - Stop current operation
-- `approve_tool` - Approve pending tool
-- `reject_tool` - Reject pending tool
-- `start_servers` - Start all servers
-- `stop_all_servers` - Stop all servers
-
-**Server → Client:**
-- `status` - Full status update
-- `llm_status` - LLM status change
-- `servers_status` - Servers status change
-- `cognitive_event` - Agent thinking/execution events
-- `response` - Final response
-- `error` - Error message
-- `agent_stopped` - Agent stopped
-
----
-
-## UI Features
-
-### Dark Mode
-- Toggle with moon/sun icon in header
+### Dark Theme
+- Click moon/sun icon to toggle
 - Persists in localStorage
-- Follows system preference if not set
+- Follows system preference by default
 
-### Servers Panel
-- All servers visible with scroll
-- Status indicators: green (running), amber (starting), red (error), gray (stopped)
-- Hover to show start/stop buttons
-- Tool count shown for running servers
+### Scrollable Panels
+- Servers panel scrolls when many servers
+- Tools panel scrolls for long lists
+- All servers now visible (no hidden items)
 
-### Tool Output
-- Expandable - click to expand/collapse
-- Shows full output (not truncated)
-- Syntax highlighting for JSON
-- Copy-friendly formatting
+### Expandable Tool Output
+- Click output to expand/collapse
+- Full output shown (not truncated)
+- Works for both success and error states
 
-### Input Box
-- Auto-expands with text
-- Max height with scroll
-- Enter to send, Shift+Enter for newline
+### Auto-Expanding Input
+- Textarea grows with content
+- Max height with scroll overflow
+- Better for multi-line prompts
 
-### Stats Display
-- Context usage percentage
-- Confidence score
-- Hallucination blocks count
-- Loop aborts count
+### Malformed JSON Recovery
+```python
+# Handles broken LLM output like:
+# {"tool":"ping","arguments":{"}}"
 
----
-
-## Troubleshooting
-
-### Common Issues
-
-**"No LLM connected"**
-- Ensure Ollama/LM Studio is running
-- Check provider URL in environment
-- Try refreshing the page
-
-**"Tool not found"**
-- Check if server is running (green indicator)
-- Verify tool name spelling
-- Look for similar suggestions
-
-**Hallucination blocked repeatedly**
-- Clear conversation and try again
-- Rephrase request more specifically
-- Check if asking about external state
-
-**Server won't start**
-- Check Python path
-- Look for import errors in console
-- Verify mcp_servers/*.py files are valid
-
-### Debug Mode
-
-```bash
-# Run with debug logging
-FLASK_DEBUG=1 python app.py
+# Extracts tool name even from partial JSON
+tool_match = re.search(r'"tool"\s*:\s*"([^"]+)"', content)
 ```
 
-### Logs
+## 🔒 Core Principles
 
-Check console output for:
-- `[INFO]` - Normal operations
-- `[WARNING]` - Potential issues
-- `[ERROR]` - Failures
+1. **Tools = Ground Truth** - Only tool output is real
+2. **No Pretending** - Cannot claim execution without tool
+3. **No Inference** - Cannot describe unseen state
+4. **Determinism > Helpfulness** - Refuse rather than hallucinate
 
----
+## 🏗️ Architecture
 
-## Version History
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  AutonomousAgent v7.1                        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐   │
+│  │ ToolCache   │   │ Hallucin.   │   │ LoopDiscipline  │   │
+│  │ - Lookup    │   │ - Context   │   │ - Max 20 iter   │   │
+│  │ - Fuzzy     │   │ - Meta skip │   │ - Confidence    │   │
+│  │ - Suggest   │   │ - Patterns  │   │ - Early exit    │   │
+│  └─────────────┘   └─────────────┘   └─────────────────┘   │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐   │
+│  │ Execution   │   │ Path        │   │ Argument        │   │
+│  │ Registry    │   │ Normalizer  │   │ Normalizer      │   │
+│  │ - State FSM │   │ - Absolute  │   │ - key→path      │   │
+│  │ - Approve   │   │ - Context   │   │ - Aliases       │   │
+│  └─────────────┘   └─────────────┘   └─────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### v7.1 (Current)
-- Dark theme with toggle
-- Scrollable servers/tools panels
-- Expandable tool output
-- Auto-expanding input
-- Malformed JSON recovery
-- Fixed sudo_handler reference
+## 🚀 Quick Start
 
-### v7.0
-- Tool session cache
-- Meta-question detection
-- Tool-not-found suggestions
-- Improved hallucination patterns
+```bash
+cd lluna_v7
+pip install -r requirements.txt
+python app.py
+# Open http://localhost:5000
+```
 
-### v6.x
-- Thread-safe approval
-- Narration detection
-- UI duplicate prevention
-- Canonical path memory
+## 📁 Files
 
----
+```
+lluna_v7/
+├── agent/
+│   ├── __init__.py
+│   ├── core.py              # Main agent
+│   ├── tool_integrity.py    # State machine + hallucination
+│   ├── loop_discipline.py   # Confidence + iteration control
+│   ├── argument_normalizer.py
+│   ├── filesystem_context.py
+│   └── tool_cache.py        # Tool lookup + meta-questions
+├── app.py                   # Flask server
+├── templates/index.html     # UI with dark mode
+├── llm/                     # Ollama/LM Studio clients
+├── mcp_client/              # MCP protocol client
+├── mcp_servers/             # Tool implementations
+├── config.yaml              # Server configuration
+├── requirements.txt
+├── README.md
+└── DOCUMENTATION.md         # Full documentation
+```
+
+## 🔍 Issues Fixed in v7.1
+
+| Issue | Solution |
+|-------|----------|
+| Tool output truncated | Show full output, click to expand |
+| Servers hidden | Scrollable panel, all visible |
+| Input doesn't expand | Auto-resize textarea |
+| No dark mode | Theme toggle with persistence |
+| Malformed JSON from LLM | Fallback regex extraction |
+| sudo_handler error | Removed broken reference |
+
+## 🎨 UI Theme
+
+**Light Mode** (default for light system)
+- White/gray backgrounds
+- Violet accents
+- Standard shadows
+
+**Dark Mode** (toggle or system dark)
+- Deep purple/navy backgrounds
+- Muted violet accents
+- Subtle borders
+
+## 📝 Example Usage
+
+```
+User: list my desktop
+Agent: {"tool":"list_directory","arguments":{"path":"/home/user/Desktop"}}
+[Tool executes - shows files]
+Agent: Your desktop has 3 files: notes.txt, project/, image.png
+
+User: what tools do you have?
+Agent: I have 15 tools including list_directory, read_file, write_file, 
+       execute_command, ping, and others for filesystem and network tasks.
+```
 
 ## License
 
-MIT License - Use freely with attribution.
-
----
-
-## Support
-
-For issues, open a GitHub issue or contact the development team.
+MIT License

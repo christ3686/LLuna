@@ -1,0 +1,112 @@
+# LLuna v6.0 Configuration
+# Tool Execution Integrity + Anti-Hallucination + Loop Discipline
+
+llm:
+  ollama:
+    base_url: "http://localhost:11434"
+    default_model: "llama3.2"
+    keep_alive: "10m"
+  lmstudio:
+    base_url: "http://localhost:1234"
+    default_model: "local-model"
+
+agent:
+  max_iterations: 20
+  temperature: 0.7
+  max_tokens: 2048
+  max_context_tokens: 4096
+  timeout: 120
+  auto_execute: false  # KEEP FALSE for integrity
+
+# Loop Discipline (model-specific limits auto-detected)
+loop_discipline:
+  confidence_threshold: 0.75  # Early exit threshold
+  abort_on_repeat: 2          # Repeated conclusion limit
+
+# Integrity Settings
+integrity:
+  validate_output: true       # Require actual output for success
+  detect_hallucination: true  # Block external state claims
+  detect_instruction_fallback: true  # Block "you should run..."
+  track_valid_paths: true     # Only allow paths from tool output
+
+startup:
+  auto_mount: true
+
+mcpServers:
+  filesystem_read:
+    command: "python"
+    args: ["mcp_servers/filesystem_read.py"]
+    enabled: true
+    description: "Read files"
+    category: "filesystem"
+
+  filesystem_write:
+    command: "python"
+    args: ["mcp_servers/filesystem_write.py"]
+    enabled: true
+    description: "Write files"
+    category: "filesystem"
+
+  bash_executor:
+    command: "python"
+    args: ["mcp_servers/bash_executor.py"]
+    enabled: true
+    description: "Shell commands"
+    category: "execution"
+
+  python_executor:
+    command: "python"
+    args: ["mcp_servers/python_executor.py"]
+    enabled: true
+    description: "Python code"
+    category: "execution"
+
+  os_tools:
+    command: "python"
+    args: ["mcp_servers/os_tools.py"]
+    enabled: true
+    description: "System info"
+    category: "system"
+
+  network_tools:
+    command: "python"
+    args: ["mcp_servers/network_tools.py"]
+    enabled: true
+    description: "Network utilities"
+    category: "network"
+
+  web_fetch:
+    command: "python"
+    args: ["mcp_servers/web_fetch.py"]
+    enabled: true
+    description: "HTTP requests"
+    category: "network"
+
+  git_tools:
+    command: "python"
+    args: ["mcp_servers/git_tools.py"]
+    enabled: true
+    description: "Git operations"
+    category: "development"
+
+  tools_mcp:
+    command: "python"
+    args: ["mcp_servers/tools_mcp.py"]
+    enabled: true
+    description: "Utilities"
+    category: "utilities"
+
+  memory_store:
+    command: "python"
+    args: ["mcp_servers/memory_store.py"]
+    enabled: true
+    description: "Persistent memory"
+    category: "utilities"
+
+  pentest_suite:
+    command: "python"
+    args: ["mcp_servers/pentest_suite.py"]
+    enabled: true
+    description: "Security scanning"
+    category: "security"
