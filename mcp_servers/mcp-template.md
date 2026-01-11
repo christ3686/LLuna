@@ -1,4 +1,3 @@
-"""
 MCP SERVER TEMPLATE (NON-FUNCTIONAL EXAMPLE)
 ============================================
 
@@ -13,5 +12,5 @@ DO NOT use this template in live environments without
 proper security review, sandboxing, and auditing.
 
 You are responsible for any code derived from this template.
-"""
+
 
