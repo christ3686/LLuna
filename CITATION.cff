@@ -1,11 +1,19 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: "Sabo"
-    given-names: "Vasile"
-    alias: "Remotex / Razuro"
-title: "LLuna: Autonomous AI Agent Framework with Integrity Enforcement"
+  - family-names: Sabo
+    given-names: Vasile
+    alias: Razuro / Remotex
+title: "LLuna: Autonomous AI Agent Framework"
 version: 7.1
 date-released: 2026-01-11
-url: "https://github.com/r4zur0/LLuna"
+url: "https://github.com/R4zur0/LLunauna" 
 license: AGPL-3.0
+abstract: "Autonomous AI agent framework with integrity enforcement, designed for small language models."
+keywords:
+  - ai
+  - agent
+  - framework
+  - python
+  - mcp
+  - security
