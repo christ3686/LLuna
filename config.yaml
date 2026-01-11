@@ -1,4 +1,4 @@
-# LLuna v6.0 Configuration
+# LLuna v7.1 Configuration
 # Tool Execution Integrity + Anti-Hallucination + Loop Discipline
 
 llm:
@@ -34,79 +34,11 @@ startup:
   auto_mount: true
 
 mcpServers:
-  filesystem_read:
+  filesystem_your_descrition:
     command: "python"
-    args: ["mcp_servers/filesystem_read.py"]
+    args: ["mcp_servers/your_mcp_server.py"]
     enabled: true
     description: "Read files"
     category: "filesystem"
 
-  filesystem_write:
-    command: "python"
-    args: ["mcp_servers/filesystem_write.py"]
-    enabled: true
-    description: "Write files"
-    category: "filesystem"
-
-  bash_executor:
-    command: "python"
-    args: ["mcp_servers/bash_executor.py"]
-    enabled: true
-    description: "Shell commands"
-    category: "execution"
-
-  python_executor:
-    command: "python"
-    args: ["mcp_servers/python_executor.py"]
-    enabled: true
-    description: "Python code"
-    category: "execution"
-
-  os_tools:
-    command: "python"
-    args: ["mcp_servers/os_tools.py"]
-    enabled: true
-    description: "System info"
-    category: "system"
-
-  network_tools:
-    command: "python"
-    args: ["mcp_servers/network_tools.py"]
-    enabled: true
-    description: "Network utilities"
-    category: "network"
-
-  web_fetch:
-    command: "python"
-    args: ["mcp_servers/web_fetch.py"]
-    enabled: true
-    description: "HTTP requests"
-    category: "network"
-
-  git_tools:
-    command: "python"
-    args: ["mcp_servers/git_tools.py"]
-    enabled: true
-    description: "Git operations"
-    category: "development"
-
-  tools_mcp:
-    command: "python"
-    args: ["mcp_servers/tools_mcp.py"]
-    enabled: true
-    description: "Utilities"
-    category: "utilities"
-
-  memory_store:
-    command: "python"
-    args: ["mcp_servers/memory_store.py"]
-    enabled: true
-    description: "Persistent memory"
-    category: "utilities"
-
-  pentest_suite:
-    command: "python"
-    args: ["mcp_servers/pentest_suite.py"]
-    enabled: true
-    description: "Security scanning"
-    category: "security"
+  
