@@ -2,60 +2,59 @@
 
 LLuna is a human-led, AI-assisted project.
 
-This repository was built using multiple AI systems in a transparent and intentional way. The goal was not to replace engineering judgment, but to accelerate iteration, exploration, and structural design.
+This repository documents an experiment in human-directed AI orchestration. All ideas, designs, and creative direction originate from a human, who coordinated multiple AI systems to assist in implementation, exploration, and refinement. This process was transparent, intentional, and not intended for marketing.
+
 🛠️ How AI was used
 
-    Claude 🧠
+Claude 🧠
 
-        Authored the main application logic
+Authored main application logic based on human instructions
 
-        Refactored core agent loops and stability fixes
+Refactored core agent loops and applied stability fixes
 
-        Assisted with architectural decisions and debugging
+Assisted with architectural decisions and debugging
 
-    ChatGPT 💬
+ChatGPT 💬
 
-        Provided precise system prompts and design constraints
+Provided precise system prompts and design constraints
 
-        Helped define MCP standards, safety rules, and error models
+Helped define MCP standards, safety rules, and error models
 
-        Acted as a reviewer and systems-level thinking aid
+Acted as a reviewer and systems-level thinking aid
 
-    Gemini ✨
+Gemini ✨
 
-        Assisted with advanced prompt engineering and refinement
+Assisted with advanced prompt engineering and refinement
 
-        Optimized system instructions for better model alignment
+Optimized system instructions for better model alignment
 
-        Contributed to creative problem-solving and documentation
+Contributed to creative problem-solving and documentation
 
-    DeepSeek 🔍
+DeepSeek 🔍
 
-        Generated MCP server implementations based on provided templates
+Generated MCP server implementations from templates
 
-        Assisted with rapid iteration of tool servers and variants
+Assisted with rapid iteration of tool servers and variants
 
 👤 Human responsibility
 
 All AI-generated output was:
 
-    reviewed ✅
+Reviewed ✅
 
-    tested 🧪
+Tested 🧪
 
-    modified 🛠️
+Modified 🛠️
 
-    integrated 🧩
+Integrated 🧩
 
-    and validated by a human operator 👨‍💻
+Validated by a human operator 👨‍💻
 
 No AI system had autonomous deployment access.
+
 📝 Important note
 
-This project intentionally documents its AI-assisted workflow. This is done for transparency, not marketing.
+This project intentionally documents its AI-assisted workflow. AI was used as a tool — not an authority. All final decisions, direction, and orchestration were managed by a human.
 
-AI was used as a tool — not as an authority. 🛠️
-
-No AI was harmed during the development of this project. 🛡️
-
+No AI was harmed during development. 🛡️
 A few GPUs may have been mildly stressed. 😄
