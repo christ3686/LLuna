@@ -17,7 +17,7 @@
 
 #!/usr/bin/env python3
 """
-LLuna v6.0 - Autonomous AI Agent
+LLuna v7.1 - Autonomous AI Agent
 =================================
 Tool Execution Integrity + Anti-Hallucination + Loop Discipline
 
