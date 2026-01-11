@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LLuna v6 [Tool Name] MCP Server
+LLuna v7 [Tool Name] MCP Server
 ================================
 [Brief description of the tool and its purpose]
 """
