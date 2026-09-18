@@ -1,5 +1,7 @@
 # 🌟 LLuna - An Easy Path to Autonomous AI
 
+[![SafeSkill 90/100](https://img.shields.io/badge/SafeSkill-90%2F100_Verified%20Safe-brightgreen)](https://safeskill.dev/scan/christ3686-lluna)
+
 ## 🚀 Getting Started
 
 Welcome to LLuna! This application helps users leverage autonomous AI agents for research while focusing on security and integrity. With LLuna, you can explore the power of AI without needing to be a programmer.
